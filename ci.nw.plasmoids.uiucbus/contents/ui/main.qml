@@ -114,51 +114,62 @@ PlasmaPlasmoid.PlasmoidItem {
                         try {
                             var depData = JSON.parse(xhrDep.responseText);
                             var departures = depData.result || [];
+                            if (departures.length > 0) {
+                                for (var i = 0; i < departures.length; i++) {
+                                    var dep = departures[i];
 
-                            for (var i = 0; i < departures.length; i++) {
-                                var dep = departures[i];
-
-                                var timeStr = "--:--";
-                                var targetTime = dep.estimatedDeparture || dep.scheduledDeparture;
-                                if (targetTime) {
-                                    var dateObj = new Date(targetTime);
-                                    if (!isNaN(dateObj.getTime())) {
-                                        timeStr = dateObj.getHours().toString().padStart(2, '0') + ":" + dateObj.getMinutes().toString().padStart(2, '0');
+                                    var timeStr = "--:--";
+                                    var targetTime = dep.estimatedDeparture || dep.scheduledDeparture;
+                                    if (targetTime) {
+                                        var dateObj = new Date(targetTime);
+                                        if (!isNaN(dateObj.getTime())) {
+                                            timeStr = dateObj.getHours().toString().padStart(2, '0') + ":" + dateObj.getMinutes().toString().padStart(2, '0');
+                                        }
                                     }
+
+                                    var shortName = (dep.route && dep.route.shortName) ? dep.route.shortName : "";
+                                    var directionChar = (dep.trip && dep.trip.direction && dep.trip.direction.shortName) ? dep.trip.direction.shortName : "";
+                                    var computedRouteId = shortName + directionChar;
+                                    if (!computedRouteId) {
+                                        computedRouteId = "Bus";
+                                    }
+
+                                    var longName = (dep.route && dep.route.longName) ? dep.route.longName : "Scheduled Route";
+                                    var destinationStr = dep.destination ? "to " + dep.destination : (dep.headsign || "");
+                                    var hexColor = (dep.route && dep.route.color) ? "#" + dep.route.color : '#000000';
+
+                                    departureModel.append({
+                                        "routeId": computedRouteId,
+                                        "routeName": longName,
+                                        "headsign": destinationStr,
+                                        "expectedTime": timeStr,
+                                        "expectedMins": dep.minutesTillDeparture !== undefined ? dep.minutesTillDeparture : 0,
+                                        "pillColor": hexColor
+                                    });
                                 }
-
-                                var shortName = (dep.route && dep.route.shortName) ? dep.route.shortName : "";
-                                var directionChar = (dep.trip && dep.trip.direction && dep.trip.direction.shortName) ? dep.trip.direction.shortName : "";
-                                var computedRouteId = shortName + directionChar;
-                                if (!computedRouteId) {
-                                    computedRouteId = "Bus";
-                                }
-
-                                var longName = (dep.route && dep.route.longName) ? dep.route.longName : "Scheduled Route";
-                                var destinationStr = dep.destination ? "to " + dep.destination : (dep.headsign || "");
-                                var hexColor = (dep.route && dep.route.color) ? "#" + dep.route.color : '#000000';
-
+                                refreshTimer.interval = 600 * 1000;
+                            } else {
                                 departureModel.append({
-                                    "routeId": computedRouteId,
-                                    "routeName": longName,
-                                    "headsign": destinationStr,
-                                    "expectedTime": timeStr,
-                                    "expectedMins": dep.minutesTillDeparture !== undefined ? dep.minutesTillDeparture : 0,
-                                    "pillColor": hexColor
+                                    "routeId": "NNN",
+                                    "routeName": "No scheduled Departures",
+                                    "headsign": "Refresh interval reduced to once per hour.",
+                                    "expectedTime": "You should have rest!",
+                                    "expectedMins": 0,
+                                    "pillColor": "#000"
                                 });
+                                refreshTimer.interval = 3600 * 1000;
                             }
-                            refreshTimer.interval = 600 * 1000;
                         } catch (e) {
                             console.error("Failed to parse departures JSON", e);
                         }
                     } else {
                         departureModel.append({
-                            "routeId": "000X",
-                            "routeName": "No Scheduled Departure",
+                            "routeId": "XXX",
+                            "routeName": "Error occured",
                             "headsign": "Refresh interval reduced to once per hour.",
-                            "expectedTime": "",
+                            "expectedTime": "Hit API Rate-limit?",
                             "expectedMins": 0,
-                            "pillColor": "#000"
+                            "pillColor": '#720000'
                         });
                         refreshTimer.interval = 3600 * 1000;
                     }
