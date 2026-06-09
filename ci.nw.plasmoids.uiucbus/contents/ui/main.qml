@@ -26,7 +26,7 @@ PlasmaPlasmoid.PlasmoidItem {
 
         // --- Data Age Properties ---
         property var lastUpdatedTime: null
-        property string dataAgeText: ""
+        property string dataAgeText: "NaN"
 
         ListModel {
             id: departureModel
@@ -52,7 +52,7 @@ PlasmaPlasmoid.PlasmoidItem {
 
         function calculateDataAge() {
             if (!contentRoot.lastUpdatedTime) {
-                contentRoot.dataAgeText = "";
+                contentRoot.dataAgeText = "NaN";
                 return;
             }
 
@@ -64,9 +64,9 @@ PlasmaPlasmoid.PlasmoidItem {
             if (diffSecs < 3) {
                 contentRoot.dataAgeText = "Just now";
             } else if (diffSecs < 60) {
-                contentRoot.dataAgeText = diffSecs + "secs ago";
+                contentRoot.dataAgeText = diffSecs + " secs ago";
             } else {
-                contentRoot.dataAgeText = diffMins + "min ago";
+                contentRoot.dataAgeText = diffMins + (diffMins === 1 ? " min ago" : " mins ago");
             }
         }
 
@@ -108,10 +108,9 @@ PlasmaPlasmoid.PlasmoidItem {
             xhrDep.onreadystatechange = function () {
                 if (xhrDep.readyState === XMLHttpRequest.DONE) {
                     contentRoot.isFetching = false;
+                    contentRoot.lastUpdatedTime = new Date();
+                    contentRoot.calculateDataAge();
                     if (xhrDep.status === 200) {
-                        contentRoot.lastUpdatedTime = new Date();
-                        contentRoot.calculateDataAge();
-
                         try {
                             var depData = JSON.parse(xhrDep.responseText);
                             var departures = depData.result || [];
@@ -137,7 +136,7 @@ PlasmaPlasmoid.PlasmoidItem {
 
                                 var longName = (dep.route && dep.route.longName) ? dep.route.longName : "Scheduled Route";
                                 var destinationStr = dep.destination ? "to " + dep.destination : (dep.headsign || "");
-                                var hexColor = (dep.route && dep.route.color) ? "#" + dep.route.color : "#511b5c";
+                                var hexColor = (dep.route && dep.route.color) ? "#" + dep.route.color : '#000000';
 
                                 departureModel.append({
                                     "routeId": computedRouteId,
@@ -148,9 +147,20 @@ PlasmaPlasmoid.PlasmoidItem {
                                     "pillColor": hexColor
                                 });
                             }
+                            refreshTimer.interval = 600 * 1000;
                         } catch (e) {
                             console.error("Failed to parse departures JSON", e);
                         }
+                    } else {
+                        departureModel.append({
+                            "routeId": "000X",
+                            "routeName": "No Scheduled Departure",
+                            "headsign": "Refresh interval reduced to once per hour.",
+                            "expectedTime": "",
+                            "expectedMins": 0,
+                            "pillColor": "#000"
+                        });
+                        refreshTimer.interval = 3600 * 1000;
                     }
                 }
             };
@@ -188,10 +198,25 @@ PlasmaPlasmoid.PlasmoidItem {
                     Layout.alignment: Qt.AlignVCenter
                 }
 
+                PlasmaComponents3.Switch {
+                    PlasmaComponents3.ToolTip.text: "Auto Refresh"
+                    PlasmaComponents3.ToolTip.visible: hovered
+                    checked: refreshTimer.running
+                    onToggled: {
+                        if (checked) {
+                            refreshTimer.start();
+                        } else {
+                            refreshTimer.stop();
+                        }
+                    }
+                }
+
                 PlasmaComponents3.ToolButton {
                     icon.name: "view-refresh"
                     onClicked: {
-                        refreshTimer.restart();
+                        if (refreshTimer.running) {
+                            refreshTimer.restart();
+                        }
                         contentRoot.fetchDepartures();
                     }
                 }
@@ -204,7 +229,7 @@ PlasmaPlasmoid.PlasmoidItem {
                 background: Rectangle {
                     color: "transparent"
                 }
-                
+
                 Kirigami.CardsListView {
                     id: listView
                     Layout.fillWidth: true
