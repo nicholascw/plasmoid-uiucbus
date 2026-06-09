@@ -1,0 +1,20 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "i@nw.ci",
+                "Name": "Nicholas Wang"
+            }
+        ],
+        "Category": "Online Services",
+        "Description": "A widget to track UIUC Bus",
+        "Icon": "/cumtd.png",
+        "Id": "ci.nw.plasmoids.uiucbus",
+        "Name": "UIUC Bus",
+        "Version": "1",
+        "Website": "https://nw.ci/",
+        "BugReportUrl": "https://github.com/nicholascw/plasmoid-uiucbus/issues/new"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "KPackageStructure": "Plasma/Applet"
+}
