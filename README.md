@@ -2,6 +2,8 @@
 
 A KDE Plasma desktop widget that displays live departures for [CUMTD](https://cumtd.com/) buses.
 
+![Screenshot](screenshot.png)
+
 ## Features
 
 - **Live bus departures** — real-time arrival times pulled from the MTD API
